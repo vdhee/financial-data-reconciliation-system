@@ -1,0 +1,17 @@
+INSERT INTO RECON_BATCHES (
+    BATCH_NAME,
+    SOURCE_SYSTEM,
+    TARGET_SYSTEM,
+    BATCH_STATUS
+)
+VALUES (
+    'Daily Payment Check',
+    'BANK_SYSTEM',
+    'ACCOUNTING_SYSTEM',
+    'PENDING'
+);
+
+COMMIT;
+
+
+select * from RECON_BATCHES;
