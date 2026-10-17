@@ -1,4 +1,3 @@
-
 SELECT
     TRANSACTION_REF,
     SOURCE_AMOUNT,
@@ -7,7 +6,7 @@ SELECT
     RECON_STATUS
 FROM RECON_RECORDS;
 
----calculate difference 
+---calculate difference
 SELECT
     5000 - 4500 AS difference,
     5000 + NULL AS missing_difference
