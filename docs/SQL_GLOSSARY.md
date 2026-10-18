@@ -1,0 +1,23 @@
+# SQL and PL/SQL glossary
+
+- **Schema**: a collection of objects owned by a database user.
+- **Primary key (PK)**: uniquely identifies a row.
+- **Foreign key (FK)**: enforces a relationship to a parent row.
+- **Constraint**: database rule such as `NOT NULL`, `CHECK`, `UNIQUE`, PK, or FK.
+- **Index**: structure that can speed up lookups/joins at the cost of storage and DML overhead.
+- **Batch**: a group of transactions processed together.
+- **Staging table**: landing area for records received from an upstream system.
+- **Reconciliation**: compare two records/systems and classify agreement or discrepancy.
+- **FULL OUTER JOIN**: retains matching rows and unmatched rows from both sides.
+- **Anti-join**: identifies rows without a match, often using `NOT EXISTS` or an outer join.
+- **NULL**: unknown/absent value; use `IS NULL`, not `= NULL`.
+- **CASE**: conditional expression that returns a value.
+- **CTE (`WITH`)**: named query block useful for structuring SQL.
+- **Analytic function**: calculates across a window of rows without collapsing each group to one row.
+- **Idempotency**: safely repeating an operation without duplicating its business effect.
+- **Control total**: count or sum used to validate the completeness of a load.
+- **Exception**: discrepancy requiring investigation; distinct from a PL/SQL exception/error.
+- **Autonomous transaction**: a PL/SQL transaction independent of the caller; use carefully for logs.
+- **Execution plan**: Oracle's chosen operations for executing a SQL statement.
+- **Cardinality**: estimated/actual number of rows at a plan step.
+- **Sargable predicate**: predicate that can use an index efficiently when appropriate.

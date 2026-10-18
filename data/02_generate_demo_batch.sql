@@ -1,0 +1,79 @@
+-- Generates a deterministic synthetic batch. Change V_ROWS to scale up/down.
+-- Default: approximately 36,000 transactions plus deliberate duplicates.
+SET SERVEROUTPUT ON;
+
+DECLARE
+    V_BATCH_ID NUMBER;
+    V_ROWS PLS_INTEGER := 18000;
+BEGIN
+    INSERT INTO RECON_BATCHES (
+        BATCH_NAME, SOURCE_SYSTEM, TARGET_SYSTEM, BATCH_STATUS
+    ) VALUES (
+        'Portfolio Demo Batch ' || TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISSFF3'),
+        'BANK_SYSTEM', 'ACCOUNTING_SYSTEM', 'PENDING'
+    )
+    RETURNING BATCH_ID INTO V_BATCH_ID;
+
+    -- Source side: 18,000 references.
+    FOR i IN 1..V_ROWS LOOP
+        INSERT INTO SOURCE_TRANSACTIONS (
+            BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE
+        ) VALUES (
+            V_BATCH_ID,
+            'DEMO' || TO_CHAR(i,'FM000000'),
+            TRUNC(SYSDATE) - MOD(i,30),
+            ROUND(100 + MOD(i * 37, 100000) / 100, 2),
+            CASE WHEN MOD(i,101)=0 THEN 'USD' ELSE 'INR' END
+        );
+    END LOOP;
+
+    -- Target side: 17,000 shared refs, plus 1,000 target-only refs.
+    FOR i IN 1..17000 LOOP
+        INSERT INTO TARGET_TRANSACTIONS (
+            BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE
+        ) VALUES (
+            V_BATCH_ID,
+            'DEMO' || TO_CHAR(i,'FM000000'),
+            TRUNC(SYSDATE) - MOD(i,30),
+            CASE
+                WHEN MOD(i,17)=0 THEN ROUND(100 + MOD(i * 37,100000)/100,2) + 25
+                ELSE ROUND(100 + MOD(i * 37,100000)/100,2)
+            END,
+            CASE WHEN MOD(i,101)=0 THEN 'INR' ELSE 'INR' END
+        );
+    END LOOP;
+
+    FOR i IN 18001..19000 LOOP
+        INSERT INTO TARGET_TRANSACTIONS (
+            BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE
+        ) VALUES (
+            V_BATCH_ID,
+            'DEMO' || TO_CHAR(i,'FM000000'),
+            TRUNC(SYSDATE) - MOD(i,30),
+            ROUND(150 + MOD(i * 19, 50000) / 100, 2),
+            'INR'
+        );
+    END LOOP;
+
+    -- Duplicate reference examples are intentionally excluded from pairing by the engine.
+    INSERT INTO SOURCE_TRANSACTIONS(BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE)
+    VALUES (V_BATCH_ID, 'DUP_SOURCE_001', SYSDATE, 250, 'INR');
+    INSERT INTO SOURCE_TRANSACTIONS(BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE)
+    VALUES (V_BATCH_ID, 'DUP_SOURCE_001', SYSDATE, 250, 'INR');
+    INSERT INTO TARGET_TRANSACTIONS(BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE)
+    VALUES (V_BATCH_ID, 'DUP_TARGET_001', SYSDATE, 500, 'INR');
+    INSERT INTO TARGET_TRANSACTIONS(BATCH_ID, TRANSACTION_REF, TRANSACTION_DATE, AMOUNT, CURRENCY_CODE)
+    VALUES (V_BATCH_ID, 'DUP_TARGET_001', SYSDATE, 500, 'INR');
+
+    DBMS_OUTPUT.PUT_LINE('Created demo batch ID: ' || V_BATCH_ID);
+    DBMS_OUTPUT.PUT_LINE('Source rows: ' || (V_ROWS + 2));
+    DBMS_OUTPUT.PUT_LINE('Target rows: ' || (17000 + 1000 + 2));
+    DBMS_OUTPUT.PUT_LINE('Status remains PENDING until reconciliation is run.');
+END;
+/
+-- Find the latest batch if DBMS_OUTPUT is not visible:
+SELECT BATCH_ID, BATCH_NAME, BATCH_STATUS, BATCH_DATE
+FROM RECON_BATCHES
+WHERE BATCH_NAME LIKE 'Portfolio Demo Batch %'
+ORDER BY BATCH_ID DESC
+FETCH FIRST 5 ROWS ONLY;

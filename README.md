@@ -1,57 +1,37 @@
-# Financial Data Reconciliation System — Oracle Connection Settings
+# Financial Data Reconciliation & Exception Management Platform
 
-**Project Details**
+A portfolio-grade Oracle SQL/PLSQL project that reconciles financial transactions across source and target systems, detects data-quality problems, records exceptions, tracks batch runs, and supports operational reporting.
 
-* Project Name: Financial Data Reconciliation System
-* Project Folder: `C:\Users\mayank\Documents\financial-data-reconciliation-system`
-* Database: Oracle AI Database 26ai Free
-* Oracle Version: `23.26.3.0.0`
-* Editor: Visual Studio Code
-* Extension: Oracle SQL Developer
+## Environment
+- Oracle Database Free / Oracle AI Database Free (tested target: Oracle 23ai/26ai-compatible SQL features)
+- VS Code + Oracle SQL Developer extension
+- Schema: use your own development schema (the original project used `ANALYTICS_PROJECT`)
 
-**VS Code Connection Settings**
+## Important: safe upgrade path
+This bundle includes:
+- `migration/` — additive upgrade for the existing project schema. This is the path to use first.
+- `data/` — synthetic dataset generator for a new demo batch.
+- `packages/`, `procedures/`, `reports/`, `tests/` — new modules and checks.
+- `docs/` — design, execution guide, glossary, and interview notes.
+- `legacy_reference/` — original scripts retained for comparison, not for re-running as a batch.
 
-| Setting         | Value                      |
-| --------------- | -------------------------- |
-| Connection Name | `FIN_RECON_LOCAL`          |
-| Connection Type | Basic                      |
-| Username        | `ANALYTICS_PROJECT`        |
-| Password        | Your saved schema password |
-| Hostname        | `127.0.0.1`                |
-| Port            | `1521`                     |
-| Service Name    | `FREEPDB1`                 |
-| Role            | Default                    |
+## Before you run anything
+1. Commit or create a Git branch/backup of your current repository.
+2. Connect to the intended PDB and confirm `USER` and `CON_NAME`.
+3. Review every script. This project uses synthetic data only.
+4. Run scripts in the order in `docs/EXECUTION_GUIDE.md`.
+5. Never include passwords, wallet files, production extracts, or real customer data in Git.
 
-**Oracle Installation**
+## Key design decisions
+- Transaction matching key for this demo: `(BATCH_ID, TRANSACTION_REF)`.
+- Currency and transaction date are comparison attributes, not part of the key. A reference that exists on both sides but has a currency difference is an exception, not two missing transactions.
+- Duplicate references are identified before reconciliation. The demo avoids arbitrary one-to-many pairing.
+- Amounts use `NUMBER(15,2)` and currency codes use ISO-like three-character codes.
+- The reconciliation procedure does not issue `COMMIT` or `ROLLBACK`; transaction ownership belongs to the caller. Failed run information is recorded using a small autonomous logging routine.
+- Re-running the same batch is blocked unless the caller explicitly resets/reopens it through a controlled workflow.
+- Data volumes are synthetic and adjustable. Begin with 20,000–100,000 rows per source and measure your environment before increasing.
 
-* Oracle Home: `C:\app\mayank\product\26ai\dbhomeFree`
-* Listener Configuration: `C:\app\mayank\product\26ai\dbhomeFree\network\admin\listener.ora`
-* Listener Host: `127.0.0.1`
-* Listener Port: `1521`
-* Database Service: `FREE`
-* Pluggable Database (PDB): `FREEPDB1`
-* Project Schema: `ANALYTICS_PROJECT`
+## Current implementation scope
+The upgrade adds reference data, run history, control totals, rule configuration, data-quality findings, duplicate findings, exception assignment/history, and audit logging. It provides a v2 reconciliation procedure that works alongside the original procedure until you validate and choose to switch over.
 
-**Current Status**
-
-* Oracle database: Running
-* PDB `FREEPDB1`: Open in READ WRITE mode
-* Listener: Running and services registered
-* VS Code connection: Connected successfully
-
-**Connection Verification Query**
-
-```sql
-SELECT
-    USER AS connected_user,
-    SYS_CONTEXT('USERENV', 'CON_NAME') AS container_name,
-    SYS_CONTEXT('USERENV', 'DB_NAME') AS database_name
-FROM dual;
-```
-
-Expected user: `ANALYTICS_PROJECT`
-Expected container: `FREEPDB1`
-
-**Project Goal**
-
-Build a Financial Data Reconciliation System using Oracle SQL and PL/SQL, with reconciliation rules, mismatch detection, exception reporting, and audit tracking.
+This is a learning/portfolio system, not a certified banking or production settlement platform.
